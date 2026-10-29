@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>EscapeZone · Experiencias inmersivas con inteligencia artificial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050507; --ink:#f5f5f7; --mute:#a7a9b4; --red:#e10019; --red-hot:#ff2a3d; --blue:#2f8fb8;
+  --glass:rgba(255,255,255,.06); --glass-brd:rgba(255,255,255,.16);
+  --ease:cubic-bezier(.22,1,.36,1);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit;margin:0}
+html{scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 84px);color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:'Roboto',system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--red-hot);outline-offset:3px;border-radius:12px}
+
+/* Luces ambientales */
+.ambient{position:fixed;inset:0;z-index:-1;overflow:hidden;background:radial-gradient(120% 80% at 50% 0%,#0b0d14 0%,var(--bg) 60%)}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform}
+.o1{width:46vmax;height:46vmax;left:-14vmax;top:-10vmax;background:radial-gradient(circle,rgba(47,143,184,.55),transparent 65%);animation:drift 22s ease-in-out infinite alternate}
+.o2{width:42vmax;height:42vmax;right:-14vmax;top:30vh;background:radial-gradient(circle,rgba(225,0,25,.5),transparent 65%);animation:drift 26s ease-in-out infinite alternate-reverse}
+.o3{width:34vmax;height:34vmax;left:20vw;bottom:-14vmax;background:radial-gradient(circle,rgba(225,0,25,.28),transparent 65%);animation:drift 30s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(6vmax,4vmax,0) scale(1.15)}}
+.grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;background:repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px)}
+
+/* Liquid glass */
+.glass{position:relative;background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.03) 45%,rgba(255,255,255,.07));
+  border:1px solid var(--glass-brd);border-radius:28px;-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(255,255,255,.04),0 20px 50px -20px rgba(0,0,0,.8);overflow:hidden}
+.glass::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%),rgba(255,70,90,.28),transparent 70%);opacity:0;transition:opacity .35s}
+.glass::after{content:"";position:absolute;left:8%;right:8%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);pointer-events:none}
+.glass:hover::before,.glass.lit::before{opacity:1}
+.tilt{transition:transform .4s var(--ease);transform-style:preserve-3d;will-change:transform}
+
+/* Navegación */
+nav{position:fixed;z-index:50;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);width:min(94vw,760px);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 8px 18px;border-radius:999px}
+nav .logo{font-weight:900;letter-spacing:-.02em;font-size:1.05rem}
+nav .logo b{color:var(--red-hot)}
+nav ul{display:flex;gap:2px;list-style:none;padding:0}
+nav ul a{display:block;padding:8px 13px;border-radius:999px;font-size:.88rem;color:var(--mute);transition:.25s}
+nav ul a:hover,nav ul a.on{color:#fff;background:rgba(255,255,255,.1)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;border-radius:999px;border:1px solid rgba(255,255,255,.25);font:500 1rem/1 'Roboto',sans-serif;color:#fff;cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,60,80,.9),rgba(190,0,22,.95));box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 10px 40px -8px rgba(225,0,25,.8);transition:transform .3s var(--ease),box-shadow .3s}
+.btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 16px 50px -6px rgba(255,42,61,.9)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:var(--glass);box-shadow:inset 0 1px 0 rgba(255,255,255,.3);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+nav .btn{padding:10px 18px;font-size:.88rem}
+@media(max-width:620px){nav ul{display:none}}
+
+/* Secciones */
+section{padding:clamp(72px,12vw,140px) 6vw;max-width:1180px;margin:0 auto}
+h1,h2{font-weight:900;letter-spacing:-.035em;line-height:.98}
+h2{font-size:clamp(2.2rem,6.4vw,4.6rem);margin-bottom:.35em}
+.red{color:var(--red-hot);text-shadow:0 0 40px rgba(255,42,61,.55)}
+.lead{color:var(--mute);font-size:clamp(1.02rem,2.2vw,1.2rem);max-width:60ch}
+.lead strong{color:#fff;font-weight:500}
+
+/* Hero */
+.hero{min-height:100svh;display:grid;align-items:center;grid-template-columns:1.1fr .9fr;gap:4vw;padding-top:120px}
+.hero h1{font-size:clamp(3.2rem,11vw,8rem);margin-bottom:.2em}
+.hero h1 span{display:inline-block;opacity:0;transform:translateY(40px);filter:blur(12px);animation:rise 1.2s var(--ease) forwards}
+.hero h1 span+span{animation-delay:.18s;color:var(--red-hot);text-shadow:0 0 60px rgba(255,42,61,.6)}
+@keyframes rise{to{opacity:1;transform:none;filter:none}}
+.hero .tag{font-size:clamp(1.05rem,2.6vw,1.45rem);color:#e8e8ee;margin-bottom:.4em}
+.hero .tag2{color:var(--mute);margin-bottom:2em}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.door-wrap{perspective:1100px;display:grid;place-items:center}
+.door{position:relative;width:min(62vw,300px);aspect-ratio:3/5;transform-style:preserve-3d;transform:rotateY(calc(var(--mx2,0)*10deg)) rotateX(calc(var(--my2,0)*-6deg));transition:transform .25s ease-out;cursor:pointer}
+.frame{position:absolute;inset:0;border-radius:18px 18px 4px 4px;border:1px solid rgba(255,255,255,.2);
+  background:radial-gradient(60% 90% at 50% 100%,rgba(255,42,61,calc(.35 + var(--open,0)*.6)),rgba(47,143,184,.25) 55%,#07080c 100%);
+  box-shadow:0 0 calc(40px + var(--open,0)*120px) rgba(225,0,25,calc(.25 + var(--open,0)*.5)),inset 0 0 40px rgba(0,0,0,.8)}
+.leaf{position:absolute;inset:0;transform-origin:left center;transform:rotateY(calc(var(--open,0)*-72deg));transition:transform .9s var(--ease);
+  border-radius:18px 18px 4px 4px;background:linear-gradient(120deg,#14161d,#07080b);border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset -3px 0 0 var(--red-hot),inset -14px 0 28px -10px rgba(255,42,61,.7)}
+.leaf::after{content:"";position:absolute;right:16px;top:52%;width:10px;height:10px;border-radius:50%;background:#555}
+.floor{position:absolute;left:-30%;right:-30%;bottom:-22px;height:24px;background:radial-gradient(50% 100% at 50% 0%,rgba(255,42,61,calc(.3 + var(--open,0)*.6)),transparent);filter:blur(8px)}
+.hint{margin-top:26px;font-size:.85rem;color:var(--mute);text-align:center}
+@media(max-width:820px){.hero{grid-template-columns:1fr;text-align:left}.door-wrap{order:-1;margin-bottom:10px}.door{width:min(46vw,200px)}}
+
+/* Chips tecnología */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 34px}
+.chip{padding:12px 20px;border-radius:999px;font-weight:500;cursor:pointer;border:1px solid var(--glass-brd);background:var(--glass);color:#ddd;
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);transition:.3s var(--ease);font-family:inherit;font-size:.98rem}
+.chip:hover,.chip.on{color:#fff;border-color:rgba(255,60,80,.8);background:rgba(225,0,25,.22);box-shadow:0 0 30px -4px rgba(255,42,61,.8);transform:translateY(-2px)}
+.grid{display:grid;gap:18px}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{padding:30px 28px}
+.card h3{font-size:1.35rem;font-weight:700;letter-spacing:-.02em;margin-bottom:8px}
+.card p{color:var(--mute)}
+.card .ico{width:46px;height:46px;border-radius:14px;margin-bottom:18px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,60,80,.9),rgba(120,0,15,.9));box-shadow:0 8px 30px -6px rgba(255,42,61,.8),inset 0 1px 0 rgba(255,255,255,.5)}
+.card .ico svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sub{margin:44px 0 16px;font-size:1.05rem;color:var(--mute)}
+
+/* Diferencial */
+.diff{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.diff .card{grid-column:span 2}
+.diff .card:nth-child(4){grid-column:2 / span 2}
+.diff .card:nth-child(5){grid-column:4 / span 2}
+@media(max-width:820px){.diff{grid-template-columns:1fr}.diff .card,.diff .card:nth-child(n){grid-column:auto}}
+
+/* Misión visión */
+.mv{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.mv .card h3{color:var(--red-hot)}
+.vals{margin-top:18px;padding:30px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.tab{padding:11px 18px;border-radius:999px;border:1px solid var(--glass-brd);background:transparent;color:var(--mute);font:500 .92rem 'Roboto',sans-serif;cursor:pointer;transition:.3s var(--ease)}
+.tab[aria-selected=true]{color:#fff;background:linear-gradient(180deg,rgba(255,60,80,.85),rgba(170,0,20,.9));border-color:rgba(255,255,255,.3);box-shadow:0 8px 30px -8px rgba(255,42,61,.9)}
+.val-out{min-height:3.4em;font-size:clamp(1.3rem,3.6vw,2.1rem);font-weight:500;letter-spacing:-.02em;line-height:1.25;transition:opacity .25s,transform .25s}
+.val-out.sw{opacity:0;transform:translateY(8px)}
+
+/* Mantra */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.step{padding:34px 12px;text-align:center;font-size:clamp(1rem,3.6vw,1.8rem);font-weight:900;letter-spacing:-.02em;cursor:pointer;transition:.4s var(--ease)}
+.step.on{color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 60px -10px rgba(255,42,61,.9);background:linear-gradient(145deg,rgba(225,0,25,.5),rgba(255,255,255,.05))}
+.step{color:#7e8190}
+@media(max-width:560px){.steps{grid-template-columns:repeat(2,1fr)}}
+
+/* Noticia */
+.pill{display:inline-flex;align-items:center;gap:10px;padding:9px 18px;border-radius:999px;margin-bottom:24px;font-size:.88rem;color:#fff;transition:transform .3s var(--ease)}
+.pill:hover{transform:translateY(-2px)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red-hot);box-shadow:0 0 12px var(--red-hot);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+.eyebrow{display:block;color:var(--red-hot);font-weight:700;letter-spacing:.14em;font-size:.85rem;margin-bottom:14px}
+.news{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:34px}
+.when{padding:8px 28px}
+.when .r{padding:18px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.when .r small{display:block;color:var(--mute);font-weight:700;letter-spacing:.1em;font-size:.78rem}
+.when .r b{font-size:clamp(1.4rem,4vw,2rem);font-weight:900;letter-spacing:-.02em;color:var(--red-hot)}
+.cd{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:22px 0 18px}
+.cd div{padding:16px 4px;border-radius:18px;text-align:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.cd b{display:block;font-size:clamp(1.7rem,6vw,2.8rem);font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.cd small{color:var(--mute);font-size:.78rem}
+.cdmsg{padding-bottom:18px;color:var(--mute);font-size:.95rem}
+.find{padding:28px;display:grid;gap:14px;align-content:start}
+.find h3{font-size:1.1rem;letter-spacing:.02em}
+.find .it{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);transition:.3s var(--ease)}
+.find .it:hover{transform:translateX(6px);border-color:rgba(255,60,80,.7);box-shadow:0 0 30px -8px rgba(255,42,61,.8)}
+.find .ico{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,60,80,.9),rgba(120,0,15,.9));box-shadow:0 6px 22px -6px rgba(255,42,61,.8)}
+.find .ico svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.askrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px;margin-top:18px;padding:28px 30px}
+.askrow h3{font-size:clamp(1.4rem,4vw,2.2rem);font-weight:900;letter-spacing:-.03em}
+.askrow p{color:var(--mute)}
+@media(max-width:820px){.news{grid-template-columns:1fr}}
+/* Redes */
+.soc{display:flex;gap:12px;margin:8px 0 10px}
+.soc a{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;border:1px solid var(--glass-brd);background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.04));box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:transform .3s var(--ease),box-shadow .3s,background .3s}
+.soc a:hover,.soc a:focus-visible{transform:translateY(-4px) scale(1.08);background:linear-gradient(145deg,rgba(255,60,80,.85),rgba(150,0,20,.9));box-shadow:0 12px 34px -6px rgba(255,42,61,.9),inset 0 1px 0 rgba(255,255,255,.5)}
+.soc svg{width:25px;height:25px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* Tarifas */
+.calc{padding:30px;margin-top:10px}
+.calc .row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;align-items:center}
+.calc .lbl{color:var(--mute);font-size:.95rem;margin:6px 0 10px}
+.chip[aria-checked=true]{color:#fff;border-color:rgba(255,60,80,.8);background:rgba(225,0,25,.3);box-shadow:0 0 30px -4px rgba(255,42,61,.8)}
+.res{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 34px;margin-top:26px;padding-top:26px;border-top:1px solid rgba(255,255,255,.12)}
+.price-big{font-size:clamp(3.4rem,14vw,6.5rem);font-weight:900;letter-spacing:-.05em;line-height:.9;text-shadow:0 0 60px rgba(255,42,61,.55)}
+.res p{color:var(--mute)}.res strong{color:#fff;font-weight:500}
+.pgrid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.pgrid .card{padding:24px}
+.pgrid .card h3{font-size:1.15rem}
+.pgrid .big{display:block;font-size:1.7rem;font-weight:900;letter-spacing:-.03em;color:#fff;margin:2px 0 6px}
+.cond{margin-top:22px;padding:26px 30px}
+.cond ul{padding-left:1.1em;color:var(--mute);display:grid;gap:6px}
+.cond h3{margin-bottom:10px;font-size:1.1rem}
+/* Contacto */
+.contact{text-align:center}
+.contact h2{font-size:clamp(2.4rem,8vw,6rem)}
+.contact .lead{margin:0 auto 38px}
+.links{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));text-align:left}
+.link{padding:26px;display:block;cursor:pointer;transition:transform .3s var(--ease)}
+.link:hover{transform:translateY(-4px)}
+.link small{display:block;color:var(--red-hot);font-weight:700;letter-spacing:.06em;margin-bottom:6px}
+.link span{font-size:1.15rem;word-break:break-all}
+footer{padding:40px 6vw calc(40px + env(safe-area-inset-bottom,0px));text-align:center;color:var(--mute);font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 28px);transform:translate(-50%,40px);opacity:0;padding:12px 22px;border-radius:999px;z-index:60;transition:.4s var(--ease);pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* Revelado al hacer scroll */
+.rv{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv,.hero h1 span{opacity:1;transform:none;filter:none}}
+</style>
+</head>
+<body>
+<div class="ambient"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
+<div class="grain"></div>
+
+<nav class="glass">
+  <a class="logo" href="#inicio">Escape<b>Zone</b></a>
+  <ul>
+    <li><a href="#experiencias">Experiencias</a></li>
+    <li><a href="#unicos">Valor</a></li>
+    <li><a href="#identidad">Identidad</a></li>
+    <li><a href="#tarifas">Tarifas</a></li>
+  </ul>
+  <a class="btn" href="#contacto">Contacto</a>
+</nav>
+
+<main>
+<section class="hero" id="inicio">
+  <div>
+    <a class="glass pill" href="#apertura"><i class="dot"></i>Gran apertura · Viernes 6/11 · 18:00</a>
+    <h1><span>Escape</span><span>Zone</span></h1>
+    <p class="tag">Experiencias inmersivas con inteligencia artificial</p>
+    <p class="tag2">Una zona. Un reto. Una salida.</p>
+    <div class="cta">
+      <a class="btn" href="#experiencias">Desafía la realidad</a>
+      <button class="btn ghost" id="openBtn" type="button">Abrir la puerta</button>
+    </div>
+  </div>
+  <div class="door-wrap">
+    <div>
+      <div class="door" id="door" role="img" aria-label="Puerta con luz roja que se abre">
+        <div class="floor"></div><div class="frame"></div><div class="leaf"></div>
+      </div>
+      <p class="hint">Toca la puerta o desplázate</p>
+    </div>
+  </div>
+</section>
+
+<section id="apertura">
+  <div class="rv">
+    <span class="eyebrow">NOTICIA</span>
+    <h2>Gran apertura<br>Escape<span class="red">Zone</span></h2>
+    <p class="lead">¿Te atreves a escapar? Ven a descubrir una experiencia de misterio, retos y trabajo en equipo.</p>
+  </div>
+  <div class="news">
+    <div class="glass when tilt rv">
+      <div class="r"><small>FECHA</small><b>Viernes 6/11</b></div>
+      <div class="r"><small>HORA</small><b>18:00</b></div>
+      <div class="r"><small>LUGAR</small><b>C/ Gran Vía, 45, Madrid</b></div>
+      <div class="cd" id="cd"><div><b id="cdD">0</b><small>días</small></div><div><b id="cdH">0</b><small>horas</small></div><div><b id="cdM">0</b><small>min</small></div><div><b id="cdS">0</b><small>seg</small></div></div>
+      <p class="cdmsg" id="cdMsg">Cuenta atrás para la apertura</p>
+    </div>
+    <div class="glass find tilt rv">
+      <h3>QUÉ ENCONTRARÁS</h3>
+      <div class="it"><span class="ico"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/></svg></span>Retos de ingenio</div>
+      <div class="it"><span class="ico"><svg viewBox="0 0 24 24"><path d="M3 5h7a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H3zM21 5h-7a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h7z"/></svg></span>Historias inmersivas</div>
+      <div class="it"><span class="ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M2 19c0-3 2.5-5 6-5s6 2 6 5M15 15c3 0 5 1.5 5 4"/></svg></span>Trabajo en equipo</div>
+      <div class="it"><span class="ico"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></span>Adrenalina y diversión</div>
+    </div>
+  </div>
+  <div class="glass askrow rv">
+    <div><h3>¿Te <span class="red">atreves</span> a escapar?</h3><p>Viernes 6/11 · 18:00 · C/ Gran Vía, 45</p></div>
+    <a class="btn" href="#tarifas">Ver tarifas</a>
+  </div>
+</section>
+
+<section id="experiencias">
+  <div class="rv">
+    <h2>Experiencias que desafían<br><span class="red">y conectan</span></h2>
+    <p class="lead">Salas de escape inmersivas que combinan <strong>aventura, tecnología avanzada y narrativas envolventes</strong>. Adaptan cada desafío en tiempo real.</p>
+  </div>
+  <div class="chips rv" id="chips">
+    <button class="chip on" type="button">Inteligencia artificial</button>
+    <button class="chip" type="button">Realidad aumentada</button>
+    <button class="chip" type="button">Sensores interactivos</button>
+    <button class="chip" type="button">Reconocimiento de voz</button>
+  </div>
+  <p class="sub rv">Pensadas para quienes buscan diversión, innovación y trabajo en equipo:</p>
+  <div class="grid g3">
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg></div><h3>Jóvenes adultos</h3><p>Diversión y aventura con narrativas que envuelven.</p></article>
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></div><h3>Empresas</h3><p>Innovación y trabajo en equipo en un juego cooperativo.</p></article>
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M2 19c0-3 2.5-5 6-5s6 2 6 5M15 15c3 0 5 1.5 5 4"/></svg></div><h3>Comunidades</h3><p>Conexión humana a través de retos compartidos.</p></article>
+  </div>
+  <p class="lead rv" style="margin-top:34px">Juego <strong>cooperativo personalizado</strong> que potencia la inmersión y la rejugabilidad.</p>
+</section>
+
+<section id="unicos">
+  <div class="rv">
+    <h2>Lo que nos<br>hace <span class="red">únicos</span></h2>
+    <p class="lead" style="margin-bottom:40px">Nuestro valor diferencial.</p>
+  </div>
+  <div class="diff">
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Retos a medida</h3><p>Retos que se adaptan a cada equipo.</p></article>
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Tecnología inmersiva</h3><p>Tecnología inmersiva que eleva los sentidos.</p></article>
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 20l6-12 4 7 3-4 5 9z"/></svg></div><h3>Escenarios temáticos</h3><p>Escenarios temáticos que envuelven y sorprenden.</p></article>
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></svg></div><h3>Innovación constante</h3><p>Innovación constante centrada en la experiencia.</p></article>
+    <article class="glass card tilt rv"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></div><h3>Atención inteligente</h3><p>Atención inteligente y feedback en tiempo real.</p></article>
+  </div>
+</section>
+
+<section id="identidad">
+  <div class="rv"><h2>Misión, visión<br>y <span class="red">valores</span></h2></div>
+  <div class="grid mv">
+    <article class="glass card tilt rv"><h3>Misión</h3><p>Crear experiencias de entretenimiento inmersivas y personalizadas que desafían la realidad, fomentando la colaboración y la innovación tecnológica.</p></article>
+    <article class="glass card tilt rv"><h3>Visión</h3><p>Ser líderes globales en el sector de entretenimiento experiencial, revolucionando la forma en que las personas interactúan con la tecnología y el misterio.</p></article>
+  </div>
+  <div class="glass vals rv">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <p class="val-out" id="valOut" aria-live="polite"></p>
+  </div>
+  <p class="sub rv" style="margin-top:56px">El método de cada sala:</p>
+  <div class="steps rv" id="steps">
+    <div class="glass step on">Observa</div><div class="glass step">Piensa</div><div class="glass step">Resuelve</div><div class="glass step">Escapa</div>
+  </div>
+</section>
+
+<section id="tarifas">
+  <div class="rv">
+    <h2>Tarifas <span class="red">oficiales</span></h2>
+    <p class="lead">Elige el tipo de sala y el número de personas. Todos los precios incluyen el IVA.</p>
+  </div>
+  <div class="glass calc rv">
+    <p class="lbl">Tipo de sala</p>
+    <div class="tabs" role="tablist" id="kind">
+      <button class="tab" type="button" role="tab" aria-selected="true" data-k="std">Sala estándar</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-k="pre">Sala premium</button>
+    </div>
+    <p class="lbl">Número de personas</p>
+    <div class="row" role="radiogroup" id="ppl"></div>
+    <div class="res">
+      <div class="price-big" id="pTot">55 €</div>
+      <div><p><strong id="pPer"></strong> por persona</p><p id="pDur"></p><p id="pNote"></p></div>
+    </div>
+  </div>
+
+  <p class="sub rv" style="margin-top:56px">Packs especiales</p>
+  <div class="grid pgrid">
+    <article class="glass card tilt rv"><h3>Pack Pareja</h3><span class="big">55 €</span><p>2 personas en una sala estándar.</p></article>
+    <article class="glass card tilt rv"><h3>Pack Amigos</h3><span class="big">76 €</span><p>4 personas en una sala estándar.</p></article>
+    <article class="glass card tilt rv"><h3>Pack Premium</h3><span class="big">108 €</span><p>4 personas en una sala premium.</p></article>
+    <article class="glass card tilt rv"><h3>Pack Grupo</h3><span class="big">desde 160 €</span><p>8 personas, organizadas en dos equipos.</p></article>
+    <article class="glass card tilt rv"><h3>Pack Empresas</h3><span class="big">desde 25 €</span><p>Por persona.</p></article>
+  </div>
+
+  <p class="sub rv" style="margin-top:56px">Ofertas y promociones</p>
+  <div class="grid pgrid">
+    <article class="glass card tilt rv"><h3>Entre semana</h3><span class="big">10 %</span><p>De descuento de lunes a jueves, excepto festivos.</p></article>
+    <article class="glass card tilt rv"><h3>Pack cumpleaños</h3><span class="big">10 %</span><p>De descuento para grupos de 5 o 6 personas. Incluye una foto de recuerdo.</p></article>
+    <article class="glass card tilt rv"><h3>Colegios e institutos</h3><span class="big">15 %</span><p>De descuento para grupos escolares de 10 personas o más, con reserva previa.</p></article>
+    <article class="glass card tilt rv"><h3>Pack empresas</h3><span class="big">desde 25 €</span><p>Por persona, con actividad de trabajo en equipo y posibilidad de reservar varias salas.</p></article>
+    <article class="glass card tilt rv"><h3>Bono regalo</h3><span class="big">desde 25 €</span><p>Por persona, para regalar una experiencia EscapeZone.</p></article>
+  </div>
+
+  <div class="glass cond rv">
+    <h3>Condiciones de reserva</h3>
+    <ul>
+      <li>Todos los precios incluyen el IVA.</li>
+      <li>Es necesario reservar con antelación.</li>
+      <li>Las promociones no son acumulables.</li>
+      <li>Los precios de los packs especiales pueden variar según la disponibilidad.</li>
+      <li>La reserva se confirma al elegir la sala, la fecha y el número de participantes.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="contact" id="contacto">
+  <div class="rv">
+    <h2>Descubre<br>Escape<span class="red">Zone</span></h2>
+    <p class="lead">Y vive la aventura que <strong>transforma la realidad</strong>.</p>
+  </div>
+  <div class="links rv">
+    <a class="glass link" href="tel:+34910478215"><small>TELÉFONO</small><span>+34 910 47 82 15</span></a>
+    <div class="glass link"><small>REDES SOCIALES</small>
+      <div class="soc">
+        <a href="https://www.instagram.com/esp.escapezone/" target="_blank" rel="noopener" aria-label="Instagram de EscapeZone"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".7" fill="#fff"/></svg></a>
+        <a href="https://www.tiktok.com/@esp.escapezone?_r=1&amp;_t=ZN-9AxMPjsZjpW" target="_blank" rel="noopener" aria-label="TikTok de EscapeZone"><svg viewBox="0 0 24 24"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5M14 3c.4 2.6 2.1 4.2 5 4.5"/></svg></a>
+        <a href="https://x.com/esp_scapezone?s=11" target="_blank" rel="noopener" aria-label="X de EscapeZone"><svg viewBox="0 0 24 24"><path d="M4 4h4.5l11.5 16h-4.5zM4 20l7-7.5M13 10.5 20 4"/></svg></a>
+      </div></div>
+    <a class="glass link" href="mailto:esp.escapezone@gmail.com"><small>CORREO ELECTRÓNICO</small><span>esp.escapezone@gmail.com</span></a>
+    <a class="glass link" href="https://www.google.com/maps/search/?api=1&query=C%2F+Gran+V%C3%ADa+45+Madrid" target="_blank" rel="noopener"><small>DIRECCIÓN</small><span>C/ Gran Vía, 45, Madrid</span></a>
+  </div>
+</section>
+</main>
+<footer>EscapeZone · C/ Gran Vía, 45, Madrid<br>Tu mundo, nuestro desafío.</footer>
+<div class="glass toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  var $=function(s,c){return(c||document).querySelector(s)},$$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+  var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches, fine=matchMedia('(hover:hover)').matches;
+
+  // Revelado al hacer scroll
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+  $$('.rv').forEach(function(el,i){el.style.transitionDelay=(i%3)*70+'ms';io.observe(el)});
+
+  // Luz de cristal siguiendo el puntero + inclinación 3D
+  $$('.glass').forEach(function(el){
+    el.addEventListener('pointermove',function(e){
+      var r=el.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+      el.style.setProperty('--mx',x+'px');el.style.setProperty('--my',y+'px');
+      if(fine&&!reduce&&el.classList.contains('tilt')){
+        el.style.transform='perspective(800px) rotateX('+((.5-y/r.height)*8).toFixed(2)+'deg) rotateY('+((x/r.width-.5)*8).toFixed(2)+'deg) translateZ(0)';
+      }
+    });
+    el.addEventListener('pointerleave',function(){el.style.transform='';el.classList.remove('lit')});
+    el.addEventListener('pointerdown',function(){el.classList.add('lit');setTimeout(function(){el.classList.remove('lit')},700)});
+  });
+
+  // Puerta del hero: se abre con scroll, toque o botón
+  var door=$('#door'),hero=$('.hero'),manual=0,tick=false;
+  function setOpen(){
+    var p=Math.min(1,Math.max(0,scrollY/(hero.offsetHeight*.6)));
+    document.documentElement.style.setProperty('--open',Math.max(p,manual).toFixed(3));
+    tick=false;
+  }
+  addEventListener('scroll',function(){if(!tick){tick=true;requestAnimationFrame(setOpen)}},{passive:true});
+  function toggle(){manual=manual?0:1;setOpen()}
+  door.addEventListener('click',toggle);$('#openBtn').addEventListener('click',toggle);
+  if(fine&&!reduce)addEventListener('pointermove',function(e){
+    door.style.setProperty('--mx2',(e.clientX/innerWidth-.5).toFixed(2));door.style.setProperty('--my2',(e.clientY/innerHeight-.5).toFixed(2));
+  });
+  setTimeout(function(){if(!reduce&&scrollY<10){manual=1;setOpen();setTimeout(function(){manual=0;setOpen()},1600)}},1400);
+
+  // Chips de tecnología
+  $$('.chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('on')})});
+
+  // Valores
+  var V=[['Innovación','Impulsamos la creatividad tecnológica constante.'],['Inmersión','Diseñamos experiencias que envuelven todos los sentidos.'],['Colaboración','Fomentamos el trabajo en equipo y la conexión humana.'],['Calidad','Garantizamos servicios excepcionales y atención dedicada.'],['Sostenibilidad','Promovemos prácticas responsables y conscientes.']];
+  var tabs=$('#tabs'),out=$('#valOut');
+  function pick(i){
+    $$('.tab').forEach(function(t,j){t.setAttribute('aria-selected',i===j)});
+    out.classList.add('sw');setTimeout(function(){out.textContent=V[i][1];out.classList.remove('sw')},180);
+  }
+  V.forEach(function(v,i){var b=document.createElement('button');b.className='tab';b.type='button';b.setAttribute('role','tab');b.textContent=v[0];b.onclick=function(){pick(i)};tabs.appendChild(b)});
+  pick(0);
+
+  // Método: Observa → Escapa (se ilumina en secuencia, toque para elegir)
+  var st=$$('.step'),k=0,timer;
+  function lit(i){st.forEach(function(s,j){s.classList.toggle('on',i===j)});k=i}
+  function loop(){clearInterval(timer);if(!reduce)timer=setInterval(function(){lit((k+1)%st.length)},2200)}
+  st.forEach(function(s,i){s.onclick=function(){lit(i);loop()}});loop();
+
+  // Cuenta atrás de la apertura
+  var T=new Date('2026-11-06T18:00:00+01:00').getTime(),cdI;
+  function cd(){
+    var d=T-Date.now();
+    if(d<=0){['D','H','M','S'].forEach(function(x){$('#cd'+x).textContent='0'});$('#cdMsg').textContent='¡Ya estamos abiertos!';clearInterval(cdI);return}
+    $('#cdD').textContent=Math.floor(d/864e5);$('#cdH').textContent=Math.floor(d/36e5)%24;
+    $('#cdM').textContent=Math.floor(d/6e4)%60;$('#cdS').textContent=Math.floor(d/1e3)%60;
+  }
+  cd();cdI=setInterval(cd,1000);
+
+  // Tarifas
+  var D={std:{dur:'Duración: entre 60 y 75 minutos.',note:'',p:[[55,'27,50'],[65,'21,67'],[76,'19'],[85,'17'],[96,'16']]},
+         pre:{dur:'Duración: entre 70 y 80 minutos.',note:'Incluye tecnología avanzada, inteligencia artificial y efectos especiales.',p:[[75,'37,50'],[90,'30'],[108,'27'],[125,'25'],[138,'23']]}};
+  var kind='std',n=0,shown=55,ppl=$('#ppl'),pTot=$('#pTot');
+  [2,3,4,5,6].forEach(function(v,i){var b=document.createElement('button');b.type='button';b.className='chip';b.setAttribute('role','radio');b.textContent=v+' personas';b.onclick=function(){n=i;upd()};ppl.appendChild(b)});
+  $$('#kind .tab').forEach(function(t){t.onclick=function(){kind=t.dataset.k;$$('#kind .tab').forEach(function(x){x.setAttribute('aria-selected',x===t)});upd()}});
+  function upd(){
+    var d=D[kind],to=d.p[n][0];
+    $$('#ppl .chip').forEach(function(c,i){c.setAttribute('aria-checked',i===n)});
+    $('#pPer').textContent=d.p[n][1]+' €';$('#pDur').textContent=d.dur;$('#pNote').textContent=d.note;
+    var from=shown,t0=performance.now();
+    function f(t){var k=Math.min(1,(t-t0)/450),e=1-Math.pow(1-k,3);pTot.textContent=Math.round(from+(to-from)*e)+' €';if(k<1)requestAnimationFrame(f);else shown=to}
+    if(reduce){pTot.textContent=to+' €';shown=to}else requestAnimationFrame(f);
+  }
+  upd();
+
+  // Menú activo
+  var links=$$('nav ul a'),secs=links.map(function(a){return $(a.getAttribute('href'))});
+  var so=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-45% 0px -50% 0px'});
+  secs.forEach(function(s){so.observe(s)});
+
+  // Copiar redes
+  var toast=$('#toast'),tt;
+  function say(m){toast.textContent=m;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show')},1800)}
+  $$('[data-copy]').forEach(function(el){
+    function go(){var t=el.dataset.copy;try{navigator.clipboard.writeText(t).then(function(){say(t+' copiado')},function(){say(t)})}catch(e){say(t)}}
+    el.addEventListener('click',go);el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});
+  });
+})();
+</script>
+</body>
+</html>
